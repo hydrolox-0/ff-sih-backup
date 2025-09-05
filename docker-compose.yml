@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # Main application
+  kmrl-induction:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/kmrl_induction
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+    restart: unless-stopped
+
+  # Dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    ports:
+      - "8050:8050"
+    environment:
+      - API_BASE_URL=http://kmrl-induction:8080/api/v1
+    depends_on:
+      - kmrl-induction
+    restart: unless-stopped
+
+  # Redis for caching and message queuing
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # PostgreSQL for data persistence
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=kmrl_induction
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  # Celery worker for background tasks
+  celery-worker:
+    build: .
+    command: celery -A tasks.celery worker --loglevel=info
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/kmrl_induction
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # Celery beat for scheduled tasks
+  celery-beat:
+    build: .
+    command: celery -A tasks.celery beat --loglevel=info
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/kmrl_induction
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  postgres_data:

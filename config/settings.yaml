@@ -1,0 +1,80 @@
+# Kochi Metro Trainset Induction System Configuration
+
+# Fleet Configuration
+fleet:
+  total_trainsets: 25
+  cars_per_trainset: 4
+  target_service_trainsets: 20
+  standby_trainsets: 3
+  maintenance_slots: 2
+
+# Optimization Weights
+optimization:
+  weights:
+    service_readiness: 0.30
+    mileage_balance: 0.20
+    branding_priority: 0.20
+    maintenance_urgency: 0.15
+    stabling_efficiency: 0.15
+  
+  constraints:
+    min_service_trainsets: 18
+    max_service_trainsets: 22
+    max_consecutive_maintenance_days: 3
+    min_cleaning_interval_days: 7
+
+# Data Sources
+data_sources:
+  maximo:
+    base_url: "https://maximo.kmrl.kerala.gov.in/api"
+    timeout_seconds: 30
+    retry_attempts: 3
+    
+  iot:
+    mqtt_broker: "mqtt.kmrl.kerala.gov.in"
+    redis_host: "localhost"
+    redis_port: 6379
+    
+  manual:
+    whatsapp_webhook: "https://api.whatsapp.com/webhook"
+    override_expiry_hours: 24
+
+# Scheduling
+scheduling:
+  decision_window_start: "21:00"
+  decision_window_end: "23:00"
+  auto_refresh_interval_minutes: 15
+  
+# Maintenance Rules
+maintenance:
+  certificate_validity_days:
+    rolling_stock: 365
+    signalling: 365
+    telecom: 180
+    
+  priority_thresholds:
+    high_priority_max: 2
+    medium_priority_max: 3
+    
+  mileage_limits:
+    service_max_km: 80000
+    maintenance_trigger_km: 75000
+
+# Branding
+branding:
+  exposure_tracking: true
+  penalty_calculation: true
+  min_daily_exposure_hours: 12
+  
+# Alerts
+alerts:
+  certificate_expiry_warning_days: 7
+  maintenance_overdue_hours: 24
+  service_shortage_threshold: 18
+  
+# Logging
+logging:
+  level: "INFO"
+  file: "logs/induction_system.log"
+  max_file_size_mb: 100
+  backup_count: 5
