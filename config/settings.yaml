@@ -2,7 +2,7 @@
 
 # Fleet Configuration
 fleet:
-  total_trainsets: 25
+  total_trainsets: 40
   cars_per_trainset: 4
   target_service_trainsets: 20
   standby_trainsets: 3

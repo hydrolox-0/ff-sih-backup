@@ -31,7 +31,7 @@ def start_dashboard():
     """Start the Dash dashboard"""
     print("📊 Starting dashboard on http://localhost:8050")
     return subprocess.Popen([
-        sys.executable, "dashboard/app.py"
+        sys.executable, "-m", "dashboard.app"
     ])
 
 def main():

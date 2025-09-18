@@ -8,6 +8,7 @@ import numpy as np
 from ortools.linear_solver import pywraplp
 from models.trainset import Trainset, TrainsetStatus, InductionDecision
 import logging
+from config.loader import config_loader
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,8 @@ class InductionScheduler:
         # Stabling efficiency (prefer lower bay numbers for easier access)
         stabling_score = 0.5
         if trainset.stabling_bay:
-            stabling_score = max(0, 1 - trainset.stabling_bay / 25)
+            total_trainsets = config_loader.get_total_trainsets()
+            stabling_score = max(0, 1 - trainset.stabling_bay / total_trainsets)
         
         # Calculate weighted composite score
         composite_score = (

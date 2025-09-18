@@ -10,6 +10,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 from datetime import datetime, timedelta
 import pickle
 import logging
+from config.loader import config_loader
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +41,10 @@ class LearningEngine:
         np.random.seed(42)
         n_samples = 1000
         
+        total_trainsets = config_loader.get_total_trainsets()
         data = {
-            'trainset_id': [f"TS-{i%25+1:03d}" for i in range(n_samples)],
-            'date': [datetime.now() - timedelta(days=i//25) for i in range(n_samples)],
+            'trainset_id': [f"TS-{i%total_trainsets+1:03d}" for i in range(n_samples)],
+            'date': [datetime.now() - timedelta(days=i//total_trainsets) for i in range(n_samples)],
             'mileage': np.random.normal(50000, 15000, n_samples),
             'days_since_maintenance': np.random.exponential(15, n_samples),
             'certificate_days_remaining': np.random.uniform(1, 365, n_samples),

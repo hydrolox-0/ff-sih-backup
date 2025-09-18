@@ -10,6 +10,7 @@ from models.trainset import Trainset, FitnessCertificate, JobCard, CertificateTy
 from .maximo_connector import MaximoConnector
 from .iot_connector import IoTConnector
 from .manual_input import ManualInputHandler
+from config.loader import config_loader
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,8 @@ class DataManager:
         trainsets = {}
         
         # Initialize trainsets with basic info
-        for i in range(1, 26):  # 25 trainsets
+        total_trainsets = config_loader.get_total_trainsets()
+        for i in range(1, total_trainsets + 1):
             trainset_id = f"TS-{i:03d}"
             trainsets[trainset_id] = Trainset(
                 trainset_id=trainset_id,

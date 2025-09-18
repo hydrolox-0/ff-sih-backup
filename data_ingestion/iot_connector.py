@@ -6,6 +6,7 @@ import asyncio
 import logging
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
+from config.loader import config_loader
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,8 @@ class IoTConnector:
             mock_certificates = []
             
             # Generate certificates for all trainsets
-            for i in range(1, 26):
+            total_trainsets = config_loader.get_total_trainsets()
+            for i in range(1, total_trainsets + 1):
                 trainset_id = f"TS-{i:03d}"
                 
                 # Rolling stock certificate
