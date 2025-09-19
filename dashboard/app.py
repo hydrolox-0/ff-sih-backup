@@ -298,7 +298,8 @@ def get_theme_styles(dark_mode):
                 'width': '100%',
                 'border': '1px solid #444',
                 'backgroundColor': '#2d2d2d',
-                'color': '#ffffff'
+                'color': '#ffffff',
+                'borderCollapse': 'collapse'
             },
             'chart_container': {
                 'backgroundColor': '#2d2d2d',
@@ -352,7 +353,8 @@ def get_theme_styles(dark_mode):
                 'width': '100%',
                 'border': '1px solid #ddd',
                 'backgroundColor': '#ffffff',
-                'color': '#000000'
+                'color': '#000000',
+                'borderCollapse': 'collapse'
             },
             'chart_container': {
                 'backgroundColor': '#ffffff',
@@ -635,13 +637,26 @@ def update_decisions_table(decisions_data, theme_data):
     # Load failure predictions
     failure_predictions = load_failure_predictions()
     
+    # Define cell style for borders
+    cell_style = {
+        'border': '1px solid #ddd' if not dark_mode else '1px solid #444',
+        'padding': '8px',
+        'textAlign': 'left'
+    }
+    
+    header_style = cell_style.copy()
+    header_style.update({
+        'backgroundColor': '#f8f9fa' if not dark_mode else '#3d3d3d',
+        'fontWeight': 'bold'
+    })
+    
     # Create table rows
     header = html.Tr([
-        html.Th("Trainset ID"),
-        html.Th("Recommended Status"),
-        html.Th("Priority Score"),
-        html.Th("Reasoning"),
-        html.Th("Risk Alert")
+        html.Th("Trainset ID", style=header_style),
+        html.Th("Recommended Status", style=header_style),
+        html.Th("Priority Score", style=header_style),
+        html.Th("Reasoning", style=header_style),
+        html.Th("Risk Alert", style=header_style)
     ])
     
     rows = [header]
@@ -671,16 +686,67 @@ def update_decisions_table(decisions_data, theme_data):
                     )
                 ], title=f"Risk of failure - Early Warning System (Probability: {prediction['probability']:.1%})")
         
+        # Determine status color
+        status = decision['recommended_status'].lower()
+        if 'service' in status or 'revenue' in status:
+            status_color = '#28a745'  # Green for service
+            status_text = 'Service'
+        elif 'standby' in status:
+            status_color = '#ffc107'  # Yellow for standby
+            status_text = 'Standby'
+        elif 'maintenance' in status:
+            status_color = '#dc3545'  # Red for maintenance
+            status_text = 'Maintenance'
+        else:
+            status_color = '#6c757d'  # Gray for unknown
+            status_text = status.replace('_', ' ').title()
+        
+        # Create trainset ID cell with colored status box
+        trainset_cell = html.Td([
+            html.Span(
+                "■",
+                style={
+                    'color': status_color,
+                    'fontSize': '16px',
+                    'marginRight': '8px',
+                    'verticalAlign': 'middle'
+                }
+            ),
+            html.Span(trainset_id, style={'verticalAlign': 'middle'})
+        ], style=cell_style)
+        
+        # Update risk cell to have proper styling
+        if trainset_id in failure_predictions:
+            prediction = failure_predictions[trainset_id]
+            if prediction['flag_for_review']:
+                risk_cell = html.Td([
+                    html.Span(
+                        "⚠️",
+                        style={
+                            'color': 'red',
+                            'fontSize': '18px',
+                            'cursor': 'pointer'
+                        }
+                    )
+                ], style=cell_style, title=f"Risk of failure - Early Warning System (Probability: {prediction['probability']:.1%})")
+            else:
+                risk_cell = html.Td("", style=cell_style)
+        else:
+            risk_cell = html.Td("", style=cell_style)
+        
         row = html.Tr([
-            html.Td(trainset_id),
-            html.Td(decision['recommended_status'].replace('_', ' ').title()),
-            html.Td(f"{decision['priority_score']:.3f}"),
-            html.Td("; ".join(decision.get('reasoning', []))),
+            trainset_cell,
+            html.Td(decision['recommended_status'].replace('_', ' ').title(), style=cell_style),
+            html.Td(f"{decision['priority_score']:.3f}", style=cell_style),
+            html.Td("; ".join(decision.get('reasoning', [])), style=cell_style),
             risk_cell
         ])
         rows.append(row)
     
-    return html.Table(rows, style=styles['table'])
+    # Apply proper table styling with borders
+    table_style = styles['table'].copy()
+    
+    return html.Table(rows, style=table_style, className='decisions-table')
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8050)
+    app.run_server(debug=True, host='0.0.0.0', port=8050)
