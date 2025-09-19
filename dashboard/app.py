@@ -14,6 +14,25 @@ import json
 import os
 from config.loader import config_loader
 
+# Load failure prediction data
+def load_failure_predictions():
+    """Load ML failure predictions from CSV"""
+    try:
+        df = pd.read_csv('data/failure_predictions.csv')
+        # Convert train_id to uppercase to match dashboard format (TS-001 vs ts-001)
+        df['train_id'] = df['train_id'].str.upper()
+        # Create a dictionary for quick lookup
+        failure_dict = {}
+        for _, row in df.iterrows():
+            failure_dict[row['train_id']] = {
+                'probability': row['failure_probability'],
+                'flag_for_review': row['flag_for_review']
+            }
+        return failure_dict
+    except Exception as e:
+        print(f"Error loading failure predictions: {e}")
+        return {}
+
 logger = logging.getLogger(__name__)
 
 # Initialize Dash app
@@ -613,23 +632,51 @@ def update_decisions_table(decisions_data, theme_data):
     dark_mode = theme_data.get('dark_mode', False)
     styles = get_theme_styles(dark_mode)
     
+    # Load failure predictions
+    failure_predictions = load_failure_predictions()
+    
     # Create table rows
     header = html.Tr([
         html.Th("Trainset ID"),
         html.Th("Recommended Status"),
         html.Th("Priority Score"),
         html.Th("Reasoning"),
-        html.Th("Conflicts")
+        html.Th("Risk Alert")
     ])
     
     rows = [header]
     for decision in decisions_data:
+        trainset_id = decision['trainset_id']
+        
+        # Check if this trainset has failure risk
+        risk_cell = html.Td("")  # Default empty cell
+        if trainset_id in failure_predictions:
+            prediction = failure_predictions[trainset_id]
+            if prediction['flag_for_review']:
+                # Create red warning icon with tooltip
+                risk_cell = html.Td([
+                    html.Span(
+                        "⚠️",
+                        id=f"risk-icon-{trainset_id}",
+                        style={
+                            'color': 'red',
+                            'fontSize': '18px',
+                            'cursor': 'pointer'
+                        }
+                    ),
+                    # Tooltip using title attribute
+                    html.Span(
+                        f"Risk of failure - Early Warning System (Probability: {prediction['probability']:.1%})",
+                        style={'display': 'none'}
+                    )
+                ], title=f"Risk of failure - Early Warning System (Probability: {prediction['probability']:.1%})")
+        
         row = html.Tr([
-            html.Td(decision['trainset_id']),
+            html.Td(trainset_id),
             html.Td(decision['recommended_status'].replace('_', ' ').title()),
             html.Td(f"{decision['priority_score']:.3f}"),
             html.Td("; ".join(decision.get('reasoning', []))),
-            html.Td("; ".join(decision.get('conflicts', [])) or "None")
+            risk_cell
         ])
         rows.append(row)
     
